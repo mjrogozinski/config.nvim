@@ -1,16 +1,12 @@
-# kickstart-modular.nvim
+# config.nvim
 
-## Introduction
+My personal Neovim configuration, maintained independently in
+[`mjrogozinski/config.nvim`](https://github.com/mjrogozinski/config.nvim).
 
-*This is a fork of [nvim-lua/kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim) that moves from a single file to a multi file configuration.*
-
-A starting point for Neovim that is:
-
-* Small
-* Modular
-* Completely Documented
-
-**NOT** a Neovim distribution, but instead a starting point for your configuration.
+Originally based on [kickstart-modular.nvim](https://github.com/dam9000/kickstart-modular.nvim)
+and [kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim), migrated from
+[`mjrogozinski-nvim/kickstart-modular.nvim`](https://github.com/mjrogozinski-nvim/kickstart-modular.nvim)
+with Git history and the MIT license preserved.
 
 ## Installation
 
@@ -40,7 +36,7 @@ External Requirements:
 > See [Install Recipes](#Install-Recipes) for additional Windows and Linux specific notes
 > and quick install snippets
 
-### Install Kickstart
+### Install config.nvim
 
 > [!NOTE]
 > [Backup](#FAQ) your previous configuration (if any exists)
@@ -53,30 +49,12 @@ Neovim's configurations are located under the following paths, depending on your
 | Windows (cmd)| `%localappdata%\nvim\` |
 | Windows (powershell)| `$env:LOCALAPPDATA\nvim\` |
 
-#### Recommended Step
-
-[Fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) this repo
-so that you have your own copy that you can modify, then install by cloning the
-fork to your machine using one of the commands below, depending on your OS.
-
-> [!NOTE]
-> Your fork's URL will be something like this:
-> `https://github.com/<your_github_username>/kickstart-modular.nvim.git`
-
-You likely want to remove `lazy-lock.json` from your fork's `.gitignore` file
-too - it's ignored in the kickstart repo to make maintenance easier, but it's
-[recommended to track it in version control](https://lazy.folke.io/usage/lockfile).
-
-#### Clone kickstart.nvim
-
-> [!NOTE]
-> If following the recommended step above (i.e., forking the repo), replace
-> `dam9000` with `<your_github_username>` in the commands below
+#### Clone config.nvim
 
 <details><summary> Linux and Mac </summary>
 
 ```sh
-git clone https://github.com/dam9000/kickstart-modular.nvim.git "${XDG_CONFIG_HOME:-$HOME/.config}"/nvim
+git clone https://github.com/mjrogozinski/config.nvim.git "${XDG_CONFIG_HOME:-$HOME/.config}"/nvim
 ```
 
 </details>
@@ -86,13 +64,13 @@ git clone https://github.com/dam9000/kickstart-modular.nvim.git "${XDG_CONFIG_HO
 If you're using `cmd.exe`:
 
 ```
-git clone https://github.com/dam9000/kickstart-modular.nvim.git "%localappdata%\nvim"
+git clone https://github.com/mjrogozinski/config.nvim.git "%localappdata%\nvim"
 ```
 
 If you're using `powershell.exe`
 
 ```
-git clone https://github.com/dam9000/kickstart-modular.nvim.git "${env:LOCALAPPDATA}\nvim"
+git clone https://github.com/mjrogozinski/config.nvim.git "${env:LOCALAPPDATA}\nvim"
 ```
 
 </details>
@@ -159,7 +137,7 @@ examples of adding popularly requested plugins.
 
 Below you can find OS specific install instructions for Neovim and dependencies.
 
-After installing all the dependencies continue with the [Install Kickstart](#Install-Kickstart) step.
+After installing all the dependencies continue with the [Install config.nvim](#install-confignvim) step.
 
 #### Windows Installation
 
