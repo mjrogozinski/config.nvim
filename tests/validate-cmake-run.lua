@@ -40,6 +40,15 @@ local function main()
     assert(items[1].name == 'first' and items[2].name == 'second')
     callback(items[2])
   end
+  cmake.run(0, true)
+  assert(
+    vim.wait(30000, function()
+      return vim.fn.filereadable(root .. '/ran-first') == 1
+    end, 50),
+    'last executable did not run without a picker'
+  )
+  assert(picks == 0)
+  vim.fn.delete(root .. '/ran-first')
   cmake.run(0)
   assert(
     vim.wait(30000, function()
@@ -48,6 +57,19 @@ local function main()
     'chosen executable did not run'
   )
   assert(picks == 1 and vim.fn.filereadable(root .. '/ran-first') == 0)
+  vim.fn.delete(root .. '/ran-second')
+  cmake.run(0, true)
+  assert(vim.wait(30000, function()
+    return vim.fn.filereadable(root .. '/ran-second') == 1
+  end, 50), 'selected executable was not remembered')
+  assert(picks == 1)
+  package.loaded['code.home.cmake'] = nil
+  cmake = require 'code.home.cmake'
+  cmake.run(0, true)
+  assert(vim.wait(30000, function()
+    return vim.fn.filereadable(root .. '/ran-first') == 1
+  end, 50), 'first executable fallback did not run')
+  assert(picks == 1)
   vim.ui.select = function(_, _, callback)
     picks = picks + 1
     callback(nil)
@@ -61,7 +83,8 @@ local function main()
     'cancel picker did not appear'
   )
   assert(vim.fn.filereadable(root .. '/ran-second') == 0)
-  assert(vim.fn.maparg('<leader>cx', 'n', false, true).desc == 'Build and run executable')
+  assert(vim.fn.maparg('<leader>cX', 'n', false, true).desc == 'Build and run executable')
+  assert(vim.fn.maparg('<leader>cx', 'n', false, true).desc == 'Build and run last executable')
   print 'Run executable: single target, custom output path, multiple targets and cancellation passed'
 end
 local ok, message = xpcall(main, debug.traceback)

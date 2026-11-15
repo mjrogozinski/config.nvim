@@ -2,6 +2,7 @@
 local M = {}
 local components = require 'code.utils.overseer-components'
 local selections = {}
+local last_executables = {}
 
 local function notify(message)
   vim.notify(message, vim.log.levels.ERROR)
@@ -195,7 +196,7 @@ local function executable_targets(context)
   return targets
 end
 
-function M.run(bufnr)
+function M.run(bufnr, use_last)
   M.build(bufnr, function(context)
     local ok, targets = pcall(executable_targets, context)
     if not ok then
@@ -206,6 +207,7 @@ function M.run(bufnr)
       if not target then
         return
       end
+      last_executables[context.root] = target.name
       task(
         'run ' .. target.name,
         context.root,
@@ -219,6 +221,15 @@ function M.run(bufnr)
     end
     if #targets == 0 then
       vim.notify('No executable targets in this CMake project', vim.log.levels.WARN)
+    elseif use_last then
+      local selected = targets[1]
+      for _, target in ipairs(targets) do
+        if target.name == last_executables[context.root] then
+          selected = target
+          break
+        end
+      end
+      execute(selected)
     elseif #targets == 1 then
       execute(targets[1])
     else

@@ -35,7 +35,7 @@
   "mini.surround": { "branch": "main", "commit": "5357f00aca51a3b43e7775901b1ad9699f8c2678" },
   "neotest": { "branch": "master", "commit": "27bf921498043f7ecd821d6db68d05de244bbd02" },
   "neotest-busted": { "branch": "master", "commit": "9145815d5bf77070a1fdf8b43cdebe15ef2efe10" },
-  "neotest-gtest": { "branch": "master", "commit": "cb41b8dca325f1d6a08f7914a049d583e3a2cb90" },
+  "neotest-cmake": { "branch": "master", "commit": "ff2c0beefe00e6539397f142d46e74a8fb71323d" },
   "neotest-python": { "branch": "master", "commit": "1b56ca4ba51c6014f986d6548ee629bdc95589d1" },
   "neotest-vim-test": { "branch": "master", "commit": "75c4228882ae4883b11bfce9b8383e637eb44192" },
   "nvim-dap": { "branch": "master", "commit": "cfa2d58f4537aca6ca83e2de1a0d9f1491121264" },

@@ -1,4 +1,8 @@
 vim.keymap.set('n', '<leader>cx', function()
+  require('code.home.cmake').run(0, true)
+end, { buffer = true, desc = 'Build and run last executable' })
+
+vim.keymap.set('n', '<leader>cX', function()
   require('code.home.cmake').run(0)
 end, { buffer = true, desc = 'Build and run executable' })
 

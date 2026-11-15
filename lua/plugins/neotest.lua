@@ -10,7 +10,7 @@ return {
     'nvim-treesitter/nvim-treesitter',
     'nvim-neotest/neotest-python',
     'nvim-neotest/neotest-vim-test',
-    'mjrogozinski/neotest-gtest',
+    { 'mjrogozinski/neotest-cmake', dir = vim.fn.expand('~/Developer/lua/neotest-cmake') },
     'vim-test/vim-test',
   },
   config = function()
@@ -71,6 +71,7 @@ return {
         end,
       },
       consumers = {
+        cmake = require('neotest-cmake.consumer'),
         overseer = require 'neotest.consumers.overseer',
       },
       adapters = {
@@ -82,11 +83,61 @@ return {
         require 'neotest-busted',
         vim_test_adapter,
         require 'rustaceanvim.neotest',
-        require('neotest-gtest').setup {},
+        require('neotest-cmake') {
+          build_dir = function(root)
+            local database = vim.uv.fs_realpath(root .. '/compile_commands.json')
+            local build = database and vim.fs.dirname(database)
+            return build and vim.uv.fs_stat(build .. '/CMakeCache.txt') and build or 'build'
+          end,
+          config = vim.g.cpp_cmake_config or '',
+        },
       },
     }
   end,
   keys = {
+    {
+      '<leader>iC',
+      function() require('neotest').summary.toggle() end,
+      desc = 'CMake tests (Neotest summary)',
+    },
+    {
+      '<leader>iA',
+      function()
+        save_buffers()
+        local path = vim.api.nvim_buf_get_name(0)
+        local root = require('neotest-cmake').root(path ~= '' and path or vim.uv.cwd())
+        if not root then
+          vim.notify('No CMake project found', vim.log.levels.WARN)
+          return
+        end
+        require('neotest').cmake.run { root, adapter = 'neotest-cmake:' .. root }
+      end,
+      desc = 'CMake run all tests (Neotest)',
+    },
+    {
+      '<leader>iB',
+      function()
+        require('code.home.cmake').build(0, function(context)
+          require('nio').run(function()
+            local ok, result = pcall(require('neotest-cmake').discover, context)
+            require('nio').scheduler()
+            if not ok then
+              vim.notify('CMake test discovery failed: ' .. tostring(result), vim.log.levels.ERROR)
+              return
+            end
+            require('neotest').cmake.refresh(context.root)
+            vim.notify(('Discovered %d GoogleTest binaries, %d cases in %s')
+              :format(result.binaries, result.cases, result.build_dir))
+          end)
+        end, true)
+      end,
+      desc = 'CMake configure, build and discover tests',
+    },
+    {
+      '<leader>iX',
+      function() require('neotest').run.stop() end,
+      desc = 'CMake stop tests (Neotest)',
+    },
     {
       '<leader>is',
       function()
@@ -107,7 +158,7 @@ return {
       '<leader>ir',
       function()
         save_buffers()
-        require('neotest').run.run()
+        require('neotest').cmake.run()
       end,
       mode = '',
       desc = 'Neotest run, run test, integration run',
@@ -134,7 +185,7 @@ return {
       '<leader>iR',
       function()
         save_buffers()
-        require('neotest').run.run { strategy = 'dap' }
+        require('neotest').cmake.run { strategy = 'dap' }
       end,
       mode = '',
       desc = 'Neotest run (debug), run test, integration run',
@@ -143,7 +194,7 @@ return {
       '<leader>if',
       function()
         save_buffers()
-        require('neotest').run.run(vim.fn.expand '%')
+        require('neotest').cmake.run(vim.fn.expand '%')
       end,
       mode = '',
       desc = 'Neotest run, run test file, integration for file',
