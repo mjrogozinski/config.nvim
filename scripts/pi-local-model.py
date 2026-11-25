@@ -18,7 +18,9 @@ MTPLX = HOME_DIR / 'Developer/ai/mtplx'
 MTPLX_REPO = 'Youssofal/Qwen3.8-27B-MTPLX-Optimized-Speed'
 STATE = HOME_DIR / '.local/state/nvim/pi-models'
 QWEN = 'qwen3.8:27b-mtp-bf16'
-TARGETS = {'ollama': (11434, QWEN), 'ds4-q2': (8012, 'deepseek-v4.1-flash'),
+INKLING_MLX = 'Inkling-2-Mini-oQ4e-mtp'
+OMLX = HOME_DIR / 'Developer/ai/inkling-mlx'
+TARGETS = {'inkling-mlx': (8016, INKLING_MLX), 'ollama': (11434, QWEN),
            'ds4-q4': (8014, 'deepseek-v4.1-flash'),
            'mtplx': (8000, 'mtplx-qwen38-27b-optimized-speed')}
 
@@ -26,7 +28,8 @@ TARGETS = {'ollama': (11434, QWEN), 'ds4-q2': (8012, 'deepseek-v4.1-flash'),
 def request(port, path, body=None, timeout=5):
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(f'http://127.0.0.1:{port}{path}', data=data,
-                                 headers={'Content-Type': 'application/json'})
+                                 headers={'Content-Type': 'application/json',
+                                          **({'Authorization': 'Bearer inkling-local'} if port == 8016 else {})})
     with urllib.request.urlopen(req, timeout=timeout) as response:
         return json.load(response)
 
@@ -60,6 +63,25 @@ def processes():
         try:
             args = shlex.split(command)
         except ValueError:
+            continue
+        # oMLX changes its process title after startup, hiding argv.
+        if args == ['omlx-server']:
+            try:
+                managed_pid = int((STATE / 'inkling-mlx.pid').read_text())
+            except (OSError, ValueError):
+                managed_pid = None
+            if managed_pid == int(pid):
+                listener = subprocess.run(
+                    ['/usr/sbin/lsof', '-a', '-p', pid, '-iTCP:8016', '-sTCP:LISTEN'],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if listener.returncode == 0:
+                    found[int(pid)] = 'inkling-mlx'
+            continue
+        if ((args[0] == str(OMLX / '.venv/bin/omlx') or
+                 (Path(args[0]).name.startswith('python') and args[1:2] == [str(OMLX / '.venv/bin/omlx')])) and 'serve' in args
+                and '--port' in args and args[args.index('--port') + 1:args.index('--port') + 2] == ['8016']
+                and '--model-dir' in args and args[args.index('--model-dir') + 1:args.index('--model-dir') + 2] == [str(OMLX / 'models')]):
+            found[int(pid)] = 'inkling-mlx'
             continue
         launcher = str(MTPLX / '.venv/bin/mtplx') in args[:2] and 'serve' in args
         # The CLI execs the actual server module and resolves the repo to a local path.
@@ -129,17 +151,21 @@ def ensure(provider):
         raise RuntimeError('DeepSeek start-server.sh is missing')
     if provider == 'mtplx' and not (MTPLX / '.venv/bin/mtplx').is_file():
         raise RuntimeError('MTPLX executable is missing')
+    if provider == 'inkling-mlx' and not (OMLX / '.venv/bin/omlx').is_file():
+        raise RuntimeError('oMLX executable is missing')
     stop_local_servers(except_provider=provider)
-    unload_ollama(keep=QWEN if provider == 'ollama' else None)
-    if provider == 'ollama':
-        if not any(m.get('name') == QWEN for m in loaded()):
-            print('Loading Qwen', flush=True)
+    ollama_model = TARGETS[provider][1] if provider == 'ollama' else None
+    unload_ollama(keep=ollama_model)
+    if ollama_model:
+        required_ctx = 32768
+        if not any(m.get('name') == ollama_model and m.get('context_length', 0) >= required_ctx for m in loaded()):
+            print(f'Loading {ollama_model}', flush=True)
             request(11434, '/api/generate', {
-                'model': QWEN, 'stream': False, 'keep_alive': '30m',
-                'options': {'num_ctx': 32768},
+                'model': ollama_model, 'stream': False, 'keep_alive': '30m',
+                'options': {'num_ctx': required_ctx},
             }, timeout=300)
         if not ready(provider):
-            raise RuntimeError('Qwen is not available in Ollama')
+            raise RuntimeError(f'{ollama_model} is not available in Ollama')
     else:
         running = provider in processes().values()
         if not running:
@@ -148,7 +174,13 @@ def ensure(provider):
             log = STATE / f'{provider}.log'
             print(f'Starting {provider}; log: {log}', flush=True)
             with log.open('ab') as output:
-                command = ([str(MTPLX / '.venv/bin/mtplx'), 'serve', '--model', MTPLX_REPO,
+                command = ([str(OMLX / '.venv/bin/omlx'), 'serve',
+                            '--model-dir', str(OMLX / 'models'), '--base-path', str(OMLX / 'state'),
+                            '--host', '127.0.0.1', '--port', '8016', '--no-hf-cache',
+                            '--max-concurrent-requests', '1', '--paged-ssd-cache-max-size', '20GB',
+                            '--api-key', 'inkling-local', '--headless']
+                           if provider == 'inkling-mlx' else
+                           [str(MTPLX / '.venv/bin/mtplx'), 'serve', '--model', MTPLX_REPO,
                             '--host', '127.0.0.1', '--port', '8000',
                             '--reasoning-effort', 'medium', '--fan-mode', 'default']
                            if provider == 'mtplx' else

@@ -2,9 +2,9 @@ return {
   'mjrogozinski/pi2.nvim',
   dependencies = { 'MeanderingProgrammer/render-markdown.nvim' },
   opts = {
-    cli = { args = { '--provider', 'ollama', '--model', 'qwen3.8:27b-mtp-bf16' } },
+    cli = { args = { '--provider', 'inkling-mlx', '--model', 'Inkling-2-Mini-oQ4e-mtp' } },
     -- Provider URLs and credentials are inherited from ~/.pi/agent/models.json.
-    models = { 'qwen3.8:27b-mtp-bf16', 'mtplx/mtplx-qwen38-27b-optimized-speed', 'deepseek-v4.1-flash' },
+    models = { 'inkling-mlx/Inkling-2-Mini-oQ4e-mtp', 'qwen3.8:27b-mtp-bf16', 'mtplx/mtplx-qwen38-27b-optimized-speed', 'ds4-q4/deepseek-v4.1-flash' },
     -- Keep Space-prefixed shortcuts out of insert mode to avoid typing delays.
     zen = { keys = { toggle = { '<leader>az', modes = { 'n' } } } },
   },

@@ -18,7 +18,7 @@ package.loaded['pi.rpc'] = Rpc
 package.loaded['pi.sessions.manager'] = { list_all = function() return sessions end }
 require('code.pi-local-models').setup()
 local rpc = setmetatable({ _job_id = 1, is_running = function() return true end }, { __index = Rpc })
-local target = { type = 'set_model', provider = 'ds4-q2', modelId = 'deepseek-v4.1-flash' }
+local target = { type = 'set_model', provider = 'ds4-q4', modelId = 'deepseek-v4.1-flash' }
 local function finish(code)
   completion({ code = code, stderr = code == 0 and '' or 'startup failed', stdout = '' })
   vim.wait(50, function() return false end, 10)
@@ -47,4 +47,9 @@ assert(rpc:send({ type = 'set_model', provider = 'mtplx', modelId = 'mtplx-qwen3
 assert(#sent == 0, 'MTPLX switched before server readiness')
 finish(0)
 assert(sent[1] == 'set_model', 'MTPLX model switch rejected')
+sent = {}
+assert(rpc:send({ type = 'set_model', provider = 'inkling-mlx', modelId = 'Inkling-2-Mini-oQ4e-mtp' }))
+assert(#sent == 0, 'oMLX switched before server readiness')
+finish(0)
+assert(sent[1] == 'set_model', 'oMLX model switch rejected')
 print('PASS: readiness, failure, concurrent switch, busy session and cancellation guards')

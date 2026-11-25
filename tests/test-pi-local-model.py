@@ -13,9 +13,9 @@ class Lifecycle(unittest.TestCase):
         events = []
         with patch.object(m, 'stop_local_servers', side_effect=lambda **k: events.append('stop')), \
              patch.object(m, 'unload_ollama', side_effect=lambda **k: events.append('unload')), \
-             patch.object(m, 'processes', return_value={10: 'ds4-q2'}), \
+             patch.object(m, 'processes', return_value={10: 'ds4-q4'}), \
              patch.object(m, 'ready', side_effect=lambda p: events.append('ready') or True):
-            m.ensure('ds4-q2')
+            m.ensure('ds4-q4')
         self.assertEqual(events, ['stop', 'unload', 'ready'])
 
     def test_unload_failure_never_starts_deepseek(self):
@@ -36,13 +36,13 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(events, ['stop', 'unload', 'load'])
 
     def test_process_matching_ignores_unrelated_and_zombies(self):
-        output = '''10 S ./ds4-server -m gguf/DeepSeek-V4.1-Flash-Q2.gguf --port 8012
+        output = '''10 S ./ds4-server -m gguf/DeepSeek-V4.1-Flash-Q4.gguf --port 8014
 11 Z ./ds4-server -m gguf/DeepSeek-V4.1-Flash-Q4.gguf --port 8014
 12 S editor DeepSeek-V4.1-Flash-Q4.gguf --port 8014
 13 S ./ds4-server -m other.gguf --port 8014
 '''
         with patch.object(m.subprocess, 'check_output', return_value=output):
-            self.assertEqual(m.processes(), {10: 'ds4-q2'})
+            self.assertEqual(m.processes(), {10: 'ds4-q4'})
 
 class MTPLXLifecycle(unittest.TestCase):
     def test_mtplx_unloads_before_start(self):
@@ -98,5 +98,24 @@ class MTPLXLifecycle(unittest.TestCase):
         for ok, model, expected in [(True, m.TARGETS['mtplx'][1], True), (False, m.TARGETS['mtplx'][1], False), (True, 'other', False)]:
             with patch.object(m, 'request', return_value={'ok': ok, 'model': model}):
                 self.assertEqual(m.ready('mtplx'), expected)
+
+
+class InklingMLXLifecycle(unittest.TestCase):
+    def test_renamed_omlx_requires_saved_pid_and_listening_port(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as tmp, patch.object(m, 'STATE', Path(tmp)), \
+             patch.object(m.subprocess, 'check_output', return_value='10 S omlx-server\n11 S omlx-server\n'), \
+             patch.object(m.subprocess, 'run') as listener:
+            (Path(tmp) / 'inkling-mlx.pid').write_text('10')
+            listener.return_value.returncode = 0
+            self.assertEqual(m.processes(), {10: 'inkling-mlx'})
+            listener.return_value.returncode = 1
+            self.assertEqual(m.processes(), {})
+
+    def test_only_managed_omlx_process_is_recognized(self):
+        cmd = f"{m.OMLX / '.venv/bin/omlx'} serve --model-dir {m.OMLX / 'models'} --port 8016"
+        output = f"10 S {cmd}\n11 Z {cmd}\n12 S editor {cmd}\n13 S {cmd.replace('8016', '8017')}\n"
+        with patch.object(m.subprocess, 'check_output', return_value=output):
+            self.assertEqual(m.processes(), {10: 'inkling-mlx'})
 
 unittest.main()
